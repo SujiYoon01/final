@@ -286,6 +286,7 @@ tbody tr:last-child td{border-bottom:none;}
 <script>
 const EMBEDDED_CSV = ``; // 완성파일/필터저장 시 실제 데이터로 교체됨
 const EMBEDDED_PREV_CSV = ``; // 전월 비교 데이터 임베딩용
+const EMBEDDED_ORG_STATS = null; // 팀별 저장 시 사업부 전체 평균·52시간 이상 비율로 자동 교체됨 (직접 수정 불필요)
 
 /* ===== 상수 ===== */
 const EXEC_RANKS = ['상무','전무','부사장'];
@@ -471,6 +472,7 @@ function buildFilterOptions(){
   TEAM_LIST = sortByOrgOrder([...new Set(RAW_ROWS.filter(isValidRow).map(r=>r['부서명']).filter(Boolean))]);
   const sel = document.getElementById('teamFilter');
   const prev = sel.value;
+  // 팀이 하나뿐인 파일(팀장님용 저장본)에서는 '부서 전체' 옵션을 만들지 않음
   sel.innerHTML = (TEAM_LIST.length===1 ? '' : '<option value="all">부서 전체</option>') + TEAM_LIST.map(t=>`<option value="${t}">${t}</option>`).join('');
   if(TEAM_LIST.includes(prev)) sel.value = prev;
 }
@@ -527,7 +529,8 @@ function computeEmployeeDetail(empId){
   const monthlyAll = buildMonthlyRows(baseRows, targetMonth);
   const deptList = monthlyAll.filter(m=>m['부서명']===last['부서명']);
   const deptAvg = deptList.length ? deptList.reduce((s,m)=>s+m._Q,0)/deptList.length : 0;
-  const orgAvg = monthlyAll.length ? monthlyAll.reduce((s,m)=>s+m._Q,0)/monthlyAll.length : 0;
+  // 팀별 저장 파일에서는 저장 시점에 계산해둔 사업부 전체 평균을 사용
+  const orgAvg = EMBEDDED_ORG_STATS ? EMBEDDED_ORG_STATS.avg : (monthlyAll.length ? monthlyAll.reduce((s,m)=>s+m._Q,0)/monthlyAll.length : 0);
   const weekMap = {}; empRows.forEach(r=>{ weekMap[r._week]=r._Q; });
   let streak=0;
   for(const wk of [...weekKeysAll].reverse()){ if(weekMap[wk]>=52) streak++; else break; }
@@ -601,6 +604,12 @@ function render(){
   const latestMonth = monthKeys[monthKeys.length-1];
   const latestRows = buildMonthlyRows(rows, latestMonth);
   const orgLatestRows = buildMonthlyRows(orgRows, latestMonth);
+  // 팀별 저장 파일: 저장 시점에 계산해둔 사업부 전체 평균/비율로 대체 (100명 대표 행)
+  if(EMBEDDED_ORG_STATS){
+    orgLatestRows.length = 0;
+    const N = 100, overN = Math.round(EMBEDDED_ORG_STATS.ratio/100*N);
+    for(let i=0;i<N;i++) orgLatestRows.push({ _Q: EMBEDDED_ORG_STATS.avg, _over: i<overN });
+  }
   const latestWeek = weekKeys[weekKeys.length-1];
 
   let prevRows = [], prevLatestRows = [];
@@ -828,7 +837,7 @@ function renderKpis(latestRows, monthKeys, allRows, orgLatestRows, team, prevLat
   }
   if(team!=='all' && orgLatestRows.length){
     const orgTotal = orgLatestRows.length;
-    const orgOver = orgLatestRows.filter(r=>r._Q>=52).length;
+    const orgOver = orgLatestRows.filter(r=>r._over!==undefined ? r._over : r._Q>=52).length;
     deltaTxt += `. 사업부 전체 ${fmt1(orgTotal?orgOver/orgTotal*100:0)}%`;
   }
   document.getElementById('kpiCountSub').innerHTML = deltaTxt;
@@ -1160,8 +1169,8 @@ function renderRiskChangeByTeam(currentRows, prevRows, combinedRows, combinedWee
   const newEntries = [...currentRiskMap.values()].filter(p=>!prevRiskMap.has(p.id));
   const exits = [...prevRiskMap.values()].filter(p=>!currentRiskMap.has(p.id));
 
-  let teams = sortByOrgOrder([...new Set([...newEntries, ...exits].map(p=>p.team).filter(Boolean).concat(ORG_ORDER))]);
-  teams = ORG_ORDER.filter(t=>true); // 기본은 조직건재순 전체 팀
+  // 현재 데이터에 존재하는 팀만, 조직건재순으로 표시 (팀별 저장 파일에서는 그 팀만 나옴)
+  let teams = sortByOrgOrder(TEAM_LIST);
   if(activeTeam && activeTeam!=='all') teams = teams.filter(t=>t===activeTeam);
 
   const byTeamList = (list) => {
@@ -1201,7 +1210,7 @@ function renderRiskChangeByTeam(currentRows, prevRows, combinedRows, combinedWee
     el.addEventListener('click', ()=>{
       const targetId = el.dataset.target;
       const detail = document.getElementById(targetId);
-      const caret = (el.classList.contains('riskchange-team-head') ? el : el).closest('.riskchange-team-row').querySelector('.riskchange-caret');
+      const caret = el.closest('.riskchange-team-row').querySelector('.riskchange-caret');
       if(!detail) return;
       const isOpen = detail.classList.contains('open');
       detail.classList.toggle('open', !isOpen);
@@ -1235,40 +1244,60 @@ function exportStandalone(){
   }
   downloadHtml(html, '우주사업총괄_근무실적현황.html');
 }
+
+/* 저장 시점의 사업부 전체 평균·52시간 이상 비율 계산 (부서 필터 미적용, 전체 데이터 기준) */
+function computeOrgStats(){
+  const rows = RAW_ROWS.filter(isValidRow);
+  rows.forEach(r=>{ r._Q = numH(r['주확정근무시간']); });
+  const months = [...new Set(rows.map(r=>r['년월']))].sort();
+  const latest = buildMonthlyRows(rows, months[months.length-1]);
+  const n = latest.length || 1;
+  return {
+    avg: latest.reduce((s,r)=>s+r._Q,0)/n,
+    ratio: latest.filter(r=>r._Q>=52).length/n*100
+  };
+}
+
 function exportTeamHTML(){
   if(RAW_ROWS.length===0){ alert('먼저 CSV를 불러와주세요.'); return; }
   const team = document.getElementById('teamFilter').value;
   if(team==='all'){ alert('저장할 특정 부서를 선택해주세요.'); return; }
-  let rows = RAW_ROWS.filter(r => r['구분']!==EXCLUDE_WORKTYPE && !EXEC_RANKS.includes(r['직급']) && !EXCLUDE_DEPT.includes(r['부서명']));
-  rows = rows.filter(r=>r['부서명']===team);
+  const orgStats = computeOrgStats(); // 부서 필터 적용 전 전체 데이터로 사업부 통계 계산
+  const notExcluded = r => r['구분']!==EXCLUDE_WORKTYPE && !EXEC_RANKS.includes(r['직급']) && !EXCLUDE_DEPT.includes(r['부서명']);
+  let rows = RAW_ROWS.filter(notExcluded).filter(r=>r['부서명']===team);
   if(rows.length===0){ alert('선택한 부서에 해당하는 데이터가 없습니다.'); return; }
   const header = ['No.','구분','년월','주차','사번','이름','직급','사업장','부서명','월','화','수','목','금','토','일','주확정근무시간','평일확정근무시간','법정휴게시간','비업무_기타','비업무','비업무(중식)'];
   const escCell = v => { const s=String(v??''); return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; };
-  const lines = [header.join(',')];
-  rows.forEach(r=> lines.push(header.map(h=>escCell(r[h])).join(',')));
-  const csvText = '\uFEFF' + lines.join('\r\n');
-  const esc = csvText.replace(/\\/g,'\\\\').replace(/`/g,'\\`').replace(/\$\{/g,'\\${');
+  const toEmbedded = list => {
+    const lines = [header.join(',')];
+    list.forEach(r=> lines.push(header.map(h=>escCell(r[h])).join(',')));
+    return ('\uFEFF' + lines.join('\r\n')).replace(/\\/g,'\\\\').replace(/`/g,'\\`').replace(/\$\{/g,'\\${');
+  };
   let html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+
+  // 1) 이번 달 데이터: 해당 부서만
   const marker = 'const EMBEDDED_CSV = `';
   const start = html.indexOf(marker);
   const closeIdx = html.indexOf('`;', start+marker.length);
-  html = html.slice(0,start) + marker + esc + html.slice(closeIdx);
-    // 전월 데이터도 해당 부서만 남겨서 교체
+  html = html.slice(0,start) + marker + toEmbedded(rows) + html.slice(closeIdx);
+
+  // 2) 전월 데이터: 해당 부서만
   const markerPrev = 'const EMBEDDED_PREV_CSV = `';
   const startPrev = html.indexOf(markerPrev);
   if(startPrev!==-1){
-    const prevTeamRows = PREV_RAW_ROWS.filter(r =>
-      r['구분']!==EXCLUDE_WORKTYPE && !EXEC_RANKS.includes(r['직급']) &&
-      !EXCLUDE_DEPT.includes(r['부서명']) && r['부서명']===team);
-    let prevEsc = '';
-    if(prevTeamRows.length){
-      const pl = [header.join(',')];
-      prevTeamRows.forEach(r=> pl.push(header.map(h=>escCell(r[h])).join(',')));
-      prevEsc = ('\uFEFF'+pl.join('\r\n')).replace(/\\/g,'\\\\').replace(/`/g,'\\`').replace(/\$\{/g,'\\${');
-    }
+    const prevTeamRows = PREV_RAW_ROWS.filter(notExcluded).filter(r=>r['부서명']===team);
+    const prevEsc = prevTeamRows.length ? toEmbedded(prevTeamRows) : '';
     const closePrev = html.indexOf('`;', startPrev+markerPrev.length);
     html = html.slice(0,startPrev) + markerPrev + prevEsc + html.slice(closePrev);
   }
+
+  // 3) 사업부 전체 평균·비율: 저장 시점 값으로 자동 삽입
+  const sMarker = 'const EMBEDDED_ORG_STATS = null;';
+  const sIdx = html.indexOf(sMarker);
+  if(sIdx!==-1){
+    html = html.slice(0,sIdx) + 'const EMBEDDED_ORG_STATS = ' + JSON.stringify(orgStats) + ';' + html.slice(sIdx+sMarker.length);
+  }
+
   downloadHtml(html, `${team}_근무실적현황.html`);
 }
 function downloadHtml(html, filename){
