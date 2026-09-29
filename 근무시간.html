@@ -471,7 +471,7 @@ function buildFilterOptions(){
   TEAM_LIST = sortByOrgOrder([...new Set(RAW_ROWS.filter(isValidRow).map(r=>r['부서명']).filter(Boolean))]);
   const sel = document.getElementById('teamFilter');
   const prev = sel.value;
-  sel.innerHTML = '<option value="all">부서 전체</option>' + TEAM_LIST.map(t=>`<option value="${t}">${t}</option>`).join('');
+  sel.innerHTML = (TEAM_LIST.length===1 ? '' : '<option value="all">부서 전체</option>') + TEAM_LIST.map(t=>`<option value="${t}">${t}</option>`).join('');
   if(TEAM_LIST.includes(prev)) sel.value = prev;
 }
 document.getElementById('teamFilter').addEventListener('change', render);
