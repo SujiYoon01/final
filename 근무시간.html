@@ -1186,7 +1186,7 @@ function renderRiskChangeByTeam(currentRows, prevRows, combinedRows, combinedWee
       const list = byTeam[t] || [];
       const uid = `${colId}_${teams.indexOf(t)}`;
       const peopleHtml = list.length
-        ? list.map(p=>`<p class="riskchange-person">${p.name} <span>· ${p.rank}</span></p>`).join('')
+        ? list.map(p=>`<p class="riskchange-person">${p.name} <span>· ${p.rank} · ${p.rank}</span></p>`).join('')
         : `<p class="riskchange-person" style="color:var(--muted);">해당자 없음</p>`;
       return `<div class="riskchange-team-row">
         <div class="riskchange-team-head" data-target="${uid}">
