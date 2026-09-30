@@ -154,7 +154,6 @@
     <div class="grp"><button type="button" class="savebtn" onclick="exportSnapshot()">현재 화면 HTML로 저장</button></div>
   </div>
   <div class="upload-err" id="uploadErrorBanner"></div>
-  <div class="upload-err" id="checkBanner"></div>
 
   <div class="part-nav">
     <button id="navPart1" onclick="showPart(1)">① 우주사업부 현황</button>
@@ -240,13 +239,12 @@
 
 <script>
 /* ===== 0. 설정: 조직/직급 분류 기준 ===== */
-/* [수정] '총괄직속' 그룹 추가: 우주사업총괄/우주사업부 조직 소속 인원이 부서별 카드에서 누락되던 문제 해결 */
+/* 조직 그룹 (우주사업총괄/우주사업부 소속 임원은 부서별 카드에서 제외) */
 const ORG_GROUPS = {
   '직속조직': ['우주사업전략팀','우주사업단','솔루션사업팀','차세대위성체계팀','제주우주센터','우주생산팀'],
-  '우주연구소': ['위성체계팀','위성본체팀','위성탑재체1팀','위성탑재체2팀','위성탑재체3팀','위성지상체팀','위성기계팀'],
-  '총괄직속': ['우주사업총괄','우주사업부']
+  '우주연구소': ['위성체계팀','위성본체팀','위성탑재체1팀','위성탑재체2팀','위성탑재체3팀','위성지상체팀','위성기계팀']
 };
-const GROUP_ORDER = ['직속조직','우주연구소','총괄직속'];
+const GROUP_ORDER = ['직속조직','우주연구소'];
 const SPACE_ORGS = Object.values(ORG_GROUPS).flat();
 const SPACE_HQ_ORGS = ['우주사업총괄','우주사업부'];
 const ORG_FIELD = '조직명';
@@ -508,40 +506,6 @@ function renderAllFromCurrent(){
   renderTenureBuckets(active);
   sums['부서별 레벨 분포']   = renderCrosstab(active);
   sums['부서별 레벨 피라미드'] = renderLevelPyramid(active);
-  runTotalChecks(active, sums);
-}
-
-/* [신규] 카드 합계 검증: 총원(재직)과 맞지 않는 카드가 있으면 상단에 경고 표시 */
-function runTotalChecks(active, sums){
-  const total = active.length;
-  const execN = active.filter(isExec).length;
-  const unclassified = active.filter(r=>classifyJobCode(r).level==='미분류').length;
-  const expected = {
-    '부서별 인원현황': total,
-    '사업장별 인원현황': total,
-    '직군별 인원현황': total,
-    '조직별 학력사항': total,
-    '부서별 레벨 피라미드': total - unclassified,
-    '부서별 레벨 분포': total - execN - unclassified,
-    '직급별 인원현황': total - execN - unclassified
-  };
-  const bad = Object.keys(expected).filter(k=>sums[k]!==expected[k])
-    .map(k=>`${k} ${sums[k]}명 (기준 ${expected[k]}명)`);
-  const notes = [];
-  if(unclassified) notes.push(`직급코드 미분류 ${unclassified}명`);
-  const blankEdu = active.filter(r=>!rawEduOf(r)).length;
-  if(blankEdu) notes.push(`최종학력 빈칸 ${blankEdu}명(학사이하로 집계)`);
-  const unknownEdu = [...new Set(active.map(rawEduOf).filter(e=>e && !KNOWN_EDU.includes(e)))];
-  if(unknownEdu.length) notes.push(`확인 필요한 학력값: ${unknownEdu.join(', ')}(학사이하로 집계)`);
-  const banner = document.getElementById('checkBanner');
-  if(bad.length){
-    banner.style.background='#FDEDE8'; banner.style.color='#C6431E'; banner.style.borderColor='#F6C9BA';
-    banner.textContent = `⚠️ 카드 합계 불일치 — ${bad.join(' / ')}` + (notes.length?` · 참고: ${notes.join(', ')}`:'');
-  } else {
-    banner.style.background='#E6F7F2'; banner.style.color='#16876F'; banner.style.borderColor='#BFE8DC';
-    banner.textContent = `✅ 검증 통과 — 재직 ${total}명 (임원 ${execN}명 제외 카드는 ${total-execN-unclassified}명)` + (notes.length?` · 참고: ${notes.join(', ')}`:'');
-  }
-  banner.style.display='block';
 }
 
 function renderLevelPyramid(active){
@@ -579,7 +543,9 @@ function renderTenureBuckets(active){
 const HEAD_KEYWORDS = ['팀장','부장','실장','사업단장','센터장','소장'];
 const HEAD_OVERRIDES = {
   '우주사업단': [{name:'권태훈', title:'사업단장'}],
-  '솔루션사업팀': [{name:'권태훈', title:'팀장'}]
+  '솔루션사업팀': [{name:'권태훈', title:'팀장'}],
+  '제주우주센터': [{name:'윤창배', title:'센터장'}],
+  '우주생산팀': [{name:'이청', title:'팀장'}]
 };
 
 function renderDeptCard(active){
@@ -593,7 +559,7 @@ function renderDeptCard(active){
     }
   });
   window.__deptHeadMap = deptHeads;
-  const [c1,c2,c3] = themeColors(); const groupColor={'직속조직':c1,'우주연구소':c2,'총괄직속':c3};
+  const [c1,c2,c3] = themeColors(); const groupColor={'직속조직':c1,'우주연구소':c2};
   let tiles='';
   const pieData=[];
   let deptSum=0;
@@ -992,7 +958,7 @@ function exportSnapshot(){
   if(!state.curr){ alert('먼저 당월 명부 CSV를 업로드해주세요.'); return; }
   const dateVal = document.getElementById('reportDate').value || new Date().toISOString().slice(0,10);
   const clone = document.documentElement.cloneNode(true);
-  ['.data-bar','#uploadErrorBanner','#checkBanner'].forEach(sel=>{ const el=clone.querySelector(sel); if(el) el.remove(); });
+  ['.data-bar','#uploadErrorBanner'].forEach(sel=>{ const el=clone.querySelector(sel); if(el) el.remove(); });
   const clonedInput = clone.querySelector('#reportDate');
   if(clonedInput) clonedInput.setAttribute('value', dateVal);
   const dataScript = document.createElement('script');
@@ -1015,4 +981,3 @@ function exportSnapshot(){
 </script>
 </body>
 </html>
-
