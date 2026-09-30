@@ -837,7 +837,7 @@ renderDonut('buEduPie', degrees.map((d,i)=>({label:d, value:totals[d], color:buE
 const CHANGE_GROUPS = [
   { id:'changeContent1', note:'changeNote1', types:['신규채용','퇴직'] },
   { id:'changeContent2', note:'changeNote2', types:['전입(타사업부)','전출(타사업부)'] },
-  { id:'changeContent3', note:'changeNote3', types:['전배','직급변동','사업장이동','근무지이동','휴직','복직','파견시작','파견복귀'] }
+  { id:'changeContent3', note:'changeNote3', types:['조직개편','전배','직급변동','사업장이동','근무지이동','휴직','복직','파견시작','파견복귀'] }
 ];
 
 const NAME_TITLE_OVERRIDES = { '김정현':'R3(연구원)' };
@@ -876,7 +876,7 @@ function renderComparison(){
     const changes=[];
     if(prev['재직상태']==='재직' && row['재직상태']==='휴직'){ flow['휴직']++; flowNames['휴직'].push(row['성명']); changes.push({type:'휴직', before:'재직', after:row['휴직구분명']||'휴직', tag:'leave', position:displayTitle(prev['성명'], prev['직급명'])}); }
     if(prev['재직상태']==='휴직' && row['재직상태']==='재직'){ flow['복직']++; flowNames['복직'].push(row['성명']); changes.push({type:'복직', before:'휴직', after:'재직', tag:'promo', position:displayTitle(prev['성명'], prev['직급명'])}); }
-    if(prev[ORG_FIELD] !== row[ORG_FIELD]) changes.push({type:'전배', before:prev[ORG_FIELD], after:row[ORG_FIELD], tag:'move', position:displayTitle(row['성명'], row['직급명'])});
+    if(prev[ORG_FIELD] !== row[ORG_FIELD]) changes.push({type:(prev[ORG_FIELD]==='제주우주센터' && row[ORG_FIELD]==='우주생산팀')?'조직개편':'전배', before:prev[ORG_FIELD], after:row[ORG_FIELD], tag:'move', position:displayTitle(row['성명'], row['직급명'])});
     if(prev['직급명'] !== row['직급명']) changes.push({type:'직급변동', before:displayTitleChange(row['성명'], prev['직급명'], 'before'), after:displayTitleChange(row['성명'], row['직급명'], 'after'), tag:'promo', position:displayTitleChange(row['성명'], row['직급명'], 'after')});
     if(prev['사업장'] !== row['사업장']) changes.push({type:'사업장이동', before:prev['사업장'], after:row['사업장'], tag:'move', position:displayTitle(row['성명'], row['직급명'])});
     if(prev['근무지역'] !== row['근무지역']) changes.push({type:'근무지이동', before:prev['근무지역'], after:row['근무지역'], tag:'move', position:displayTitle(row['성명'], row['직급명'])});
