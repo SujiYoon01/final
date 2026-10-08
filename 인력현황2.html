@@ -422,7 +422,7 @@ function renderDonut(containerId,data,centerLabel,opts={}){
     start = end;
   });
   const legend = data.map(d=>{ const pct=total?Math.round(d.value/total*100):0; return `<span class="pie-legend-item"><i style="background:${d.color}"></i>${d.label} ${d.value}명(${pct}%)</span>`; }).join('');
-  document.getElementById(containerId).innerHTML = `<div class="pie-title">${centerLabel}</div><svg width="100%" height="${size}" viewBox="0 0 ${size} ${size}" style="overflow:visible;">${paths}${labels}</svg><div class="pie-legend">${legend}</div>`;
+  document.getElementById(containerId).innerHTML = `<div class="pie-title">${centerLabel}</div><svg width="100%" height="${size}" viewBox="${-(opts.pad||0)} 0 ${size+2*(opts.pad||0)} ${size}" style="overflow:visible;">${paths}${labels}</svg><div class="pie-legend">${legend}</div>`;
 }
 function esc(s){ return String(s).replace(/'/g,"\\'"); }
 
@@ -672,7 +672,7 @@ function renderEduCard(active){
   rows += `<tr class="total"><td class="lbl">합계</td>${degrees.map(d=>`<td>${totals[d]}</td>`).join('')}<td>${totalSum}</td></tr>`;
   document.getElementById('eduContent').innerHTML = `<div class="split"><div class="tbl-col"><table class="tbl">${rows}</table></div><div class="chart-col" id="eduPie"></div></div>`;
   const colors = donutPalette(degrees.length);
-  renderDonut('eduPie', degrees.map((d,i)=>({label:d, value:totals[d], color:colors[i]})), '학력 분포');
+  renderDonut('eduPie', degrees.map((d,i)=>({label:d, value:totals[d], color:colors[i]})), '학력 분포', {pad:90});
   document.getElementById('eduNote').textContent = '박사/석사/학사이하(고교·전문대·학사)';
   return totalSum;
 }
