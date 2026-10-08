@@ -1,1 +1,2 @@
-viewBox="${-(opts.pad||0)} 0 ${size+2*(opts.pad||0)} ${size}"
+.split .chart-col{ flex:1 1 220px; }
+#eduContent .tbl-col{ flex:1 1 100%; }
