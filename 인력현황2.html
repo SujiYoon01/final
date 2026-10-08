@@ -688,7 +688,7 @@ function renderTenureCard(active){
   const avg = tenures.length ? tenures.reduce((a,{t})=>a+t,0)/tenures.length : 0;
   renderBarList('teamTenureContent', deptData, {unit:'년', markValue:Math.round(avg*100)/100, markLabel:`우주사업부 평균 ${avg.toFixed(2)}년`});
   document.getElementById('kpiTenure').textContent = avg.toFixed(2)+'년';
-  document.getElementById('kpiTenureChip').textContent = `그룹입사일 기준 · 임원 제외 · ${fmtYM(base)} 기준`;
+  document.getElementById('kpiTenureChip').textContent = `그룹입사일 기준 · 임원 제외`;
   document.getElementById('kpiTenureChip').className = 'chip neutral';
 }
 
@@ -781,7 +781,7 @@ function renderBUSection(){
   const tenuresAll = nonExecAll.map(r=>tenureYearsOf(r, base)).filter(t=>t!==null);
   const avgAll = tenuresAll.length ? tenuresAll.reduce((a,b)=>a+b,0)/tenuresAll.length : 0;
   document.getElementById('kpiTenureAll').textContent = avgAll.toFixed(2)+'년';
-  document.getElementById('kpiTenureAllChip').textContent = `그룹입사일 기준 · 임원 제외 · ${fmtYM(base)} 기준`;
+  document.getElementById('kpiTenureAllChip').textContent = `그룹입사일 기준 · 임원 제외`;
   document.getElementById('kpiTenureAllChip').className = 'chip neutral';
 
   document.getElementById('buAgeNote').textContent = `${base.getFullYear()}년 한국나이 기준`;
