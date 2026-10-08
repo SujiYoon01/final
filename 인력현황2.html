@@ -247,7 +247,7 @@ const ORG_GROUPS = {
 const GROUP_ORDER = ['직속조직','우주연구소'];
 const SPACE_ORGS = Object.values(ORG_GROUPS).flat();
 const SPACE_HQ_ORGS = ['우주사업총괄','우주사업부'];
-const ORG_FIELD = '조직명';
+const ORG_FIELD = '원소속부서';
 function groupOf(org){ for(const [g,list] of Object.entries(ORG_GROUPS)) if(list.includes(org)) return g; return '미분류'; }
 
 const BU_ORG_MAP = {
@@ -313,7 +313,7 @@ function eduOf(row){ return eduSimple(rawEduOf(row)); }
 
 function koreanAge(raw, base){ const m=(raw||'').match(/(\d{4})/); if(!m) return null; return base.getFullYear() - (+m[1]) + 1; }
 function fmtYM(d){ return `'${String(d.getFullYear()).slice(2)}.${String(d.getMonth()+1).padStart(2,'0')}`; }
-const REQUIRED_COLUMNS = ['사번','성명','재직상태','조직명','법정생년월일','최종학력','직급코드','사업장','직위코드명'];
+const REQUIRED_COLUMNS = ['사번','성명','재직상태','원소속부서','법정생년월일','최종학력','직급코드','사업장','직위코드명'];
 
 /* ===== 1. 색상 유틸 ===== */
 function hexToRgb(hex){ hex=hex.replace('#',''); return [parseInt(hex.substring(0,2),16),parseInt(hex.substring(2,4),16),parseInt(hex.substring(4,6),16)]; }
