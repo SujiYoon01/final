@@ -173,11 +173,8 @@
       <div class="card w-half"><div class="card-title"><span class="tab" style="background:var(--pos)"></span><h2>전배 · 직급변동 · 사업장이동 · 근무지이동</h2><span class="note" id="changeNote3">전월/당월 명부 비교</span></div>
         <div id="changeContent3" class="card-body"><div class="empty-state">전월·당월 명부 CSV를 모두 올리면 표시됩니다</div></div></div>
 
-      <div class="card w-half"><div class="card-title"><span class="tab"></span><h2>부서별 인원현황</h2><span class="note" id="deptNote">원소속부서 기준</span></div>
+      <div class="card w-full"><div class="card-title"><span class="tab"></span><h2>부서별 인원현황</h2><span class="note" id="deptNote">원소속부서 기준</span></div>
         <div id="deptContent" class="card-body"><div class="empty-state">당월 명부 CSV를 올리면 표시됩니다</div></div></div>
-
-      <div class="card w-half"><div class="card-title"><span class="tab"></span><h2>사업장별 인원현황</h2><span class="note">사업장 클릭시 해당 사업장 소속 부서 확인 가능</span></div>
-        <div id="siteContent" class="card-body"><div class="empty-state">당월 명부 CSV를 올리면 표시됩니다</div></div></div>
 
       <div class="card w-full"><div class="card-title"><span class="tab" style="background:#7C5FD1"></span><h2>부서별 레벨 분포</h2><span class="note" id="crossNote"></span></div>
         <div id="crosstabContent" class="card-body"><div class="empty-state">당월 명부 CSV를 올리면 표시됩니다</div></div></div>
@@ -446,7 +443,6 @@ function renderAllFromCurrent(){
   document.getElementById('kpiTotalChip').className = 'chip up';
 
   renderDeptCard(active);
-  renderSiteCard(active);
   renderLevelCard(active);
   renderEduCard(active);
   renderTenureCard(active);
