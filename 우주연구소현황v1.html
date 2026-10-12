@@ -188,17 +188,14 @@
       <div class="card w-half"><div class="card-title"><span class="tab" style="background:#7C5FD1"></span><h2>직급별 인원현황</h2><span class="note" id="levelNote">L7~L3이하</span></div>
         <div id="levelContent" class="card-body"><div class="empty-state">당월 명부 CSV를 올리면 표시됩니다</div></div></div>
 
-      <div class="card w-half"><div class="card-title"><span class="tab" style="background:#7C5FD1"></span><h2>직군별 인원현황</h2><span class="note" id="jobNote">직급코드 기준</span></div>
-        <div id="jobContent" class="card-body"><div class="empty-state">당월 명부 CSV를 올리면 표시됩니다</div></div></div>
+      <div class="card w-half"><div class="card-title"><span class="tab" style="background:#7C5FD1"></span><h2>근속연수별 인원현황</h2><span class="note">그룹입사일 기준 구간 · 임원 제외</span></div>
+        <div id="tenureBucketContent" class="card-body"><div class="empty-state">당월 명부 CSV를 올리면 표시됩니다</div></div></div>
 
       <div class="card w-half"><div class="card-title"><span class="tab" style="background:var(--pos)"></span><h2>조직별 학력사항</h2><span class="note" id="eduNote"></span></div>
         <div id="eduContent" class="card-body"><div class="empty-state">당월 명부 CSV를 올리면 표시됩니다</div></div></div>
 
       <div class="card w-half"><div class="card-title"><span class="tab"></span><h2>부서별 평균 근속연수</h2><span class="note">그룹입사일 기준 · 임원 제외</span></div>
         <div id="teamTenureContent" class="card-body"><div class="empty-state">당월 명부 CSV를 올리면 표시됩니다</div></div></div>
-
-      <div class="card w-half"><div class="card-title"><span class="tab"></span><h2>근속연수별 인원현황</h2><span class="note">그룹입사일 기준 구간 · 임원 제외</span></div>
-        <div id="tenureBucketContent" class="card-body"><div class="empty-state">당월 명부 CSV를 올리면 표시됩니다</div></div></div>
     </div>
   </div>
 
@@ -260,16 +257,40 @@ function donutPalette(n){ const [c1,c2,c3,c4]=themeColors(); const base=[c1,c2,c
 
 /* ===== 2. CSV 파싱 & 업로드 ===== */
 const state = { curr:null, prev:null };
+/* 열 이름 보정: 공백·따옴표·BOM 제거 후 비교, 비슷한 이름은 표준 이름으로 변환 */
+const COLUMN_ALIASES = {
+  '성명':['이름','사원명','성명(한글)'],
+  '재직상태':['재직구분','재직여부','재직구분명','재직상태명','인사상태'],
+  '원소속부서':['원소속조직','원소속조직명','원소속부서명','소속부서','소속조직','부서명','조직명'],
+  '법정생년월일':['생년월일','주민생년월일'],
+  '최종학력':['학력','최종학력명','학력구분'],
+  '사업장':['사업장명'],
+  '직위코드명':['직위','직위명','직위코드']
+};
+function normHeader(h){ return String(h||'').replace(/[﻿ \s"']/g,''); }
+function canonicalHeader(h){
+  const n = normHeader(h);
+  if(REQUIRED_COLUMNS.includes(n)) return n;
+  for(const [std, list] of Object.entries(COLUMN_ALIASES)) if(list.map(normHeader).includes(n)) return std;
+  return n;
+}
+function splitLine(line, delim){
+  const cells=[]; let cur='', q=false;
+  for(let i=0;i<line.length;i++){ const ch=line[i];
+    if(ch==='"'){ q=!q; } else if(ch===delim && !q){ cells.push(cur); cur=''; } else cur+=ch; }
+  cells.push(cur); return cells.map(c=>c.trim());
+}
 function parseCsvText(text){
-  const lines = text.split(/\r?\n/).filter(l=>l.length>0);
-  const rows = lines.map(line=>{
-    const cells=[]; let cur='', q=false;
-    for(let i=0;i<line.length;i++){ const ch=line[i];
-      if(ch==='"'){ q=!q; } else if(ch===',' && !q){ cells.push(cur); cur=''; } else cur+=ch; }
-    cells.push(cur); return cells.map(c=>c.trim());
-  });
-  const header = rows[0];
-  return rows.slice(1).map(r=>{ const o={}; header.forEach((h,i)=>o[h]=r[i]??''); return o; });
+  const lines = text.split(/\r?\n/).filter(l=>l.trim().length>0);
+  /* 구분자 자동 인식 (쉼표/탭/세미콜론) */
+  const sample = lines.slice(0,15).join('\n');
+  const delim = [',','\t',';'].map(d=>[d,(sample.split(d).length-1)]).sort((a,b)=>b[1]-a[1])[0][0];
+  const rows = lines.map(line=>splitLine(line, delim));
+  /* 제목 줄이 위에 있어도 '사번'이 있는 줄을 머리글로 인식 */
+  let hi = rows.findIndex((r,i)=> i<15 && r.some(c=>normHeader(c)==='사번'));
+  if(hi<0) hi = 0;
+  const header = rows[hi].map(canonicalHeader);
+  return rows.slice(hi+1).map(r=>{ const o={}; header.forEach((h,i)=>{ if(h && !(h in o && o[h]!=='')) o[h]=r[i]??''; }); return o; });
 }
 function showUploadError(which,msg){ const banner=document.getElementById('uploadErrorBanner'); banner.textContent=(which==='prev'?'[전월 명부] ':'[당월 명부] ')+msg; banner.style.display='block'; }
 function clearUploadError(which){ const banner=document.getElementById('uploadErrorBanner'); const label=which==='prev'?'[전월 명부]':'[당월 명부]'; if(banner.textContent.startsWith(label)){ banner.style.display='none'; banner.textContent=''; } }
@@ -300,7 +321,7 @@ function onRosterFile(which,file){
       const rows = parseCsvText(text);
       if(rows.length===0){ showUploadError(which,'데이터가 없습니다.'); resetFileStatus(which); return; }
       const missing = REQUIRED_COLUMNS.filter(c=>!Object.keys(rows[0]).includes(c));
-      if(missing.length){ showUploadError(which,'필수 컬럼이 없습니다: '+missing.join(', ')); resetFileStatus(which); return; }
+      if(missing.length){ showUploadError(which,'필수 컬럼이 없습니다: '+missing.join(', ')+' / 파일에서 읽은 열 이름: '+Object.keys(rows[0]).slice(0,40).join(' | ')); resetFileStatus(which); return; }
       clearUploadError(which); state[which]=rows;
       const inRnd = rows.filter(inScope).length;
       const s=document.getElementById(which==='prev'?'prevStatus':'currStatus'); s.textContent=`전체 ${rows.length}명 중 연구소 ${inRnd}명`; s.classList.remove('wait'); s.classList.add('ok');
@@ -422,7 +443,6 @@ function renderAllFromCurrent(){
   renderDeptCard(active);
   renderSiteCard(active);
   renderLevelCard(active);
-  renderJobCard(active);
   renderEduCard(active);
   renderTenureCard(active);
   renderTenureBuckets(active);
@@ -759,4 +779,3 @@ function exportSnapshot(){
 </script>
 </body>
 </html>
-
