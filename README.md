@@ -1,3 +1,2 @@
-const DEPT_MERGE = { '체계기술2팀':'제주우주센터', '제조팀':'제주우주센터' };
-const NAME_DEPT_OVERRIDE = { '임창훈':'대관지원팀', '방순일':'대관지원팀', '이청':'우주생산팀' };
-const NAME_DEPT_OVERRIDE_FROM = ['제주우주센터','체계기술2팀','제조팀'];
+header.forEach((h,idx)=>{ obj[h] = rows[r][idx]!==undefined ? rows[r][idx].trim() : ''; });
+    if(NAME_DEPT_OVERRIDE[obj['이름']] && NAME_DEPT_OVERRIDE_FROM.includes(obj['부서명'])) obj['부서명'] = NAME_DEPT_OVERRIDE[obj['이름']];
