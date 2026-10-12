@@ -292,6 +292,7 @@ const EMBEDDED_ORG_STATS = null; // 팀별 저장 시 사업부 전체 평균·5
 const EXEC_RANKS = ['상무','전무','부사장'];
 const EXCLUDE_DEPT = ['우주사업부','우주사업총괄'];
 const EXCLUDE_WORKTYPE = '근태예외자';
+const HIDE_DEPT_VIEW = ['우주연구소'];
 const WEEKDAY_COLS = ['월','화','수','목','금'];
 const REQUIRED_COLUMNS = ['구분','년월','주차','사번','이름','직급','부서명','월','화','수','목','금','토','일','주확정근무시간'];
 const DEPT_MERGE = { '체계기술2팀':'제주우주센터', '제조팀':'제주우주센터' };
@@ -469,7 +470,7 @@ function resetDisplay(){
 
 /* ===== 필터 옵션 ===== */
 function buildFilterOptions(){
-  TEAM_LIST = sortByOrgOrder([...new Set(RAW_ROWS.filter(isValidRow).map(r=>r['부서명']).filter(Boolean))]);
+  TEAM_LIST = sortByOrgOrder([...new Set(RAW_ROWS.filter(isValidRow).map(r=>r['부서명']).filter(Boolean))]).filter(t=>!HIDE_DEPT_VIEW.includes(t));
   const sel = document.getElementById('teamFilter');
   const prev = sel.value;
   // 팀이 하나뿐인 파일(팀장님용 저장본)에서는 '부서 전체' 옵션을 만들지 않음
@@ -657,7 +658,7 @@ function renderQuadrant(latestRows, team){
   let groups = [];
   if(mode==='dept'){
     const byTeam = {};
-    latestRows.forEach(r=>{ const t=r['부서명']; if(!t) return; (byTeam[t]=byTeam[t]||[]).push(r); });
+    latestRows.forEach(r=>{ const t=r['부서명']; if(!t || HIDE_DEPT_VIEW.includes(t)) return; (byTeam[t]=byTeam[t]||[]).push(r); });
     groups = Object.entries(byTeam).map(([t,arr])=>({
       x: arr.reduce((s,r)=>s+r._Q,0)/arr.length, n:arr.length, teamName:t,
       members: arr.map(r=>({name:r['이름'], rank:r['직급'], x:r._Q}))
@@ -965,7 +966,7 @@ function renderDeptRanking(latestRows, orgLatestRows, activeTeam, prevLatestRows
     return;
   }
   const byTeam={};
-  latestRows.forEach(r=>{ const t=r['부서명']; if(!t) return; (byTeam[t]=byTeam[t]||[]).push(r._Q); });
+  latestRows.forEach(r=>{ const t=r['부서명']; if(!t || HIDE_DEPT_VIEW.includes(t)) return; (byTeam[t]=byTeam[t]||[]).push(r._Q);
   const items = Object.entries(byTeam).map(([team,arr])=>({team, avg: arr.reduce((a,b)=>a+b,0)/arr.length})).sort((a,b)=>b.avg-a.avg);
   const orgAvg = orgLatestRows.length ? orgLatestRows.reduce((s,r)=>s+r._Q,0)/orgLatestRows.length : 0;
   const axisMax = Math.max(56, orgAvg*1.05, ...items.map(i=>i.avg*1.05));
