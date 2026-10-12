@@ -518,14 +518,14 @@ function computeEmployeeDetail(empId){
   const baseRows = RAW_ROWS.filter(isValidRow);
   const empRows = baseRows.filter(r=>r['사번']===empId);
   if(!empRows.length) return null;
-  empRows.forEach(r=>{ r._week = weekKey(r); r._Q = numH(r['주확정근무시간']); });
+  empRows.forEach(r=>{ r._week = weekKey(r); r._Q = Math.max(40, numH(r['주확정근무시간'])); });
   const weekKeysAll = [...new Set(empRows.map(r=>r._week))].sort();
   const last = empRows[empRows.length-1];
   const monthKeys = [...new Set(baseRows.map(r=>r['년월']))].sort();
   const targetMonth = monthKeys[monthKeys.length-1] || last['년월'];
   const myMonthRows = empRows.filter(r=>r['년월']===targetMonth);
   const monthAvg = myMonthRows.length ? myMonthRows.reduce((s,r)=>s+r._Q,0)/myMonthRows.length : 0;
-  baseRows.forEach(r=>{ r._Q = numH(r['주확정근무시간']); });
+  baseRows.forEach(r=>{ r._Q = Math.max(40, numH(r['주확정근무시간'])); });
   const monthlyAll = buildMonthlyRows(baseRows, targetMonth);
   const deptList = monthlyAll.filter(m=>m['부서명']===last['부서명']);
   const deptAvg = deptList.length ? deptList.reduce((s,m)=>s+m._Q,0)/deptList.length : 0;
@@ -591,7 +591,7 @@ function render(){
   if(RAW_ROWS.length===0) return;
   const team = document.getElementById('teamFilter').value;
   let rows = RAW_ROWS.filter(isValidRow);
-  rows.forEach(r=>{ r._week = weekKey(r); r._Q = numH(r['주확정근무시간']); });
+  rows.forEach(r=>{ r._week = weekKey(r); r._Q = Math.max(40, numH(r['주확정근무시간'])); });
   const orgRows = rows; // 부서필터 미적용 전체(사업부 전체 평균 계산용)
 
   if(team!=='all') rows = rows.filter(r=>r['부서명']===team);
@@ -616,7 +616,7 @@ function render(){
   if(PREV_RAW_ROWS.length){
     prevRows = PREV_RAW_ROWS.filter(isValidRow);
     if(team!=='all') prevRows = prevRows.filter(r=>r['부서명']===team);
-    prevRows.forEach(r=>{ r._week = weekKey(r); r._Q = numH(r['주확정근무시간']); });
+    prevRows.forEach(r=>{ r._week = weekKey(r); r._Q = Math.max(40, numH(r['주확정근무시간'])); });
     const prevMonthKeys = [...new Set(prevRows.map(r=>r['년월']))].sort();
     const prevMonth = prevMonthKeys[prevMonthKeys.length-1];
     if(prevMonth) prevLatestRows = buildMonthlyRows(prevRows, prevMonth);
@@ -1248,7 +1248,7 @@ function exportStandalone(){
 /* 저장 시점의 사업부 전체 평균·52시간 이상 비율 계산 (부서 필터 미적용, 전체 데이터 기준) */
 function computeOrgStats(){
   const rows = RAW_ROWS.filter(isValidRow);
-  rows.forEach(r=>{ r._Q = numH(r['주확정근무시간']); });
+  rows.forEach(r=>{ r._Q = Math.max(40, numH(r['주확정근무시간'])); });
   const months = [...new Set(rows.map(r=>r['년월']))].sort();
   const latest = buildMonthlyRows(rows, months[months.length-1]);
   const n = latest.length || 1;
