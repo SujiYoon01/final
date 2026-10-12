@@ -1,3 +1,1 @@
-const EXCLUDE_WORKTYPE = '근태예외자';
-const HIDE_DEPT_VIEW = ['우주연구소'];
-
+.map(r=>r['부서명']).filter(Boolean))]).filter(t=>!HIDE_DEPT_VIEW.includes(t));
