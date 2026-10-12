@@ -1,1 +1,3 @@
-r._Q = Math.max(40, numH(r['주확정근무시간']))
+const EXCLUDE_WORKTYPE = '근태예외자';
+const HIDE_DEPT_VIEW = ['우주연구소'];
+
