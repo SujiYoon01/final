@@ -296,7 +296,9 @@ const HIDE_DEPT_VIEW = ['우주연구소'];
 const WEEKDAY_COLS = ['월','화','수','목','금'];
 const REQUIRED_COLUMNS = ['구분','년월','주차','사번','이름','직급','부서명','월','화','수','목','금','토','일','주확정근무시간'];
 const DEPT_MERGE = { '체계기술2팀':'제주우주센터', '제조팀':'제주우주센터' };
-const ORG_ORDER = ['우주사업전략팀','우주사업단','솔루션사업팀','차세대위성체계팀','위성체계팀','위성본체팀','위성탑재체1팀','위성탑재체2팀','위성탑재체3팀','위성지상체팀','위성기계팀','제주우주센터'];
+const NAME_DEPT_OVERRIDE = { '임창훈':'대관지원팀', '방순일':'대관지원팀', '이청':'우주생산팀' };
+const NAME_DEPT_OVERRIDE_FROM = ['제주우주센터','체계기술2팀','제조팀'];
+const ORG_ORDER = ['우주사업전략팀','우주사업단','솔루션사업팀','차세대위성체계팀','위성체계팀','위성본체팀','위성탑재체1팀','위성탑재체2팀','위성탑재체3팀','위성지상체팀','위성기계팀','제주우주센터','대관지원팀'];
 function sortByOrgOrder(list){
   return [...list].sort((a,b)=>{
     const ia = ORG_ORDER.indexOf(a), ib = ORG_ORDER.indexOf(b);
@@ -342,6 +344,7 @@ function parseCSV(text){
     if(rows[r].length===1 && rows[r][0]==='') continue;
     const obj = {};
     header.forEach((h,idx)=>{ obj[h] = rows[r][idx]!==undefined ? rows[r][idx].trim() : ''; });
+        if(NAME_DEPT_OVERRIDE[obj['이름']] && NAME_DEPT_OVERRIDE_FROM.includes(obj['부서명'])) obj['부서명'] = NAME_DEPT_OVERRIDE[obj['이름']];
         if(obj['사번']) obj['사번'] = String(obj['사번']).replace(/\s+/g,'').replace(/\.0+$/,'').replace(/^0+/,'');
     data.push(obj);
   }
