@@ -966,7 +966,7 @@ function renderDeptRanking(latestRows, orgLatestRows, activeTeam, prevLatestRows
     return;
   }
   const byTeam={};
-  latestRows.forEach(r=>{ const t=r['부서명']; if(!t || HIDE_DEPT_VIEW.includes(t)) return; (byTeam[t]=byTeam[t]||[]).push(r._Q);
+  latestRows.forEach(r=>{ const t=r['부서명']; if(!t || HIDE_DEPT_VIEW.includes(t)) return; (byTeam[t]=byTeam[t]||[]).push(r._Q); });
   const items = Object.entries(byTeam).map(([team,arr])=>({team, avg: arr.reduce((a,b)=>a+b,0)/arr.length})).sort((a,b)=>b.avg-a.avg);
   const orgAvg = orgLatestRows.length ? orgLatestRows.reduce((s,r)=>s+r._Q,0)/orgLatestRows.length : 0;
   const axisMax = Math.max(56, orgAvg*1.05, ...items.map(i=>i.avg*1.05));
