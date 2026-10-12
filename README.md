@@ -1,2 +1,1 @@
-.split .chart-col{ flex:1 1 220px; }
-#eduContent .tbl-col{ flex:1 1 100%; }
+r._Q = Math.max(40, numH(r['주확정근무시간']))
