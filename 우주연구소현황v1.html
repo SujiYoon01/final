@@ -354,7 +354,12 @@ function renderDonut(containerId,data,centerLabel,opts={}){
   data.forEach(d=>{
     const sweep = total?(d.value/total)*360:0; const end=start+sweep; const mid=start+sweep/2;
     const [x1,y1]=pt(start,r), [x2,y2]=pt(end,r); const large=sweep>180?1:0;
-    paths += `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} Z" fill="${d.color}" stroke="#fff" stroke-width="1.5"/>`;
+    if(total>0 && d.value===total){
+      /* 한 항목이 100%면 시작점=끝점이라 호가 그려지지 않으므로 원 전체를 그림 */
+      paths += `<path d="M${cx},${cy-r} A${r},${r} 0 1 1 ${cx},${cy+r} A${r},${r} 0 1 1 ${cx},${cy-r} Z" fill="${d.color}" stroke="#fff" stroke-width="1.5"/>`;
+    } else {
+      paths += `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} Z" fill="${d.color}" stroke="#fff" stroke-width="1.5"/>`;
+    }
     const pct = total?Math.round(d.value/total*100):0;
     if(d.value>0 && (opts.forceLabels || pct>=8)){
       const isRight = Math.cos(toRad(mid))>=0;
@@ -517,8 +522,7 @@ document.addEventListener('click', e=>{ const tip=document.getElementById('deptT
 
 /* 사업장 클릭 시 보여줄 소속 부서 (조직 개편 시 수동 수정) */
 const SITE_SUMMARY_ORGS = {
-  '용인': ['차세대위성체계팀','위성체계팀','위성본체팀','위성탑재체1팀','위성탑재체2팀','위성지상체팀','위성기계팀'],
-  '서현': ['위성탑재체3팀']
+  '판교2': ['차세대위성체계팀','위성체계팀','위성본체팀','위성탑재체1팀','위성탑재체2팀','위성탑재체3팀','위성지상체팀','위성기계팀']
 };
 function renderSiteCard(active){
   const counts={};
