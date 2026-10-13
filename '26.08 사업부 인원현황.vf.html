@@ -276,7 +276,7 @@ function orgToBU(org){ return ORG_TO_BU[(org||'').trim()] || null; }
 function isSpace(org){ return SPACE_ORGS.includes((org||'').trim()); }
 /* 재직 현황(총원) 대상: 13개 팀 전원 + 상위조직(우주사업총괄/우주사업부/우주연구소)에 소속된 임원 */
 const UPPER_ORGS = ['우주사업총괄','우주사업부','우주연구소'];
-function inTotal(r){ return isSpace(r[ORG_FIELD]) || (UPPER_ORGS.includes((r[ORG_FIELD]||'').trim()) && isExec(r)); }
+function inTotal(r){ return isSpace(r[ORG_FIELD]) && !isExec(r); }
 let EXEC_EXCLUDED = 0;
 
 /* 임원 판별: 직위코드명 기준 (직급코드 P/VP/ED 기준이 아님) */
@@ -511,7 +511,7 @@ function renderAllFromCurrent(){
   EXEC_EXCLUDED = active.length - activeNE.length;
 
   document.getElementById('kpiTotalNum').textContent = active.length+'명';
-  document.getElementById('kpiTotalChip').textContent = '재직 인원 기준 · 임원 포함';
+  document.getElementById('kpiTotalChip').textContent = '재직 인원 기준 · 임원 제외';
   document.getElementById('kpiTotalChip').className = 'chip up';
 
   renderDeptCard(activeNE);
