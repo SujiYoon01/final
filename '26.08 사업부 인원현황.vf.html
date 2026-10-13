@@ -274,6 +274,9 @@ Object.entries(BU_ORG_MAP).forEach(([bu, orgs])=>{ orgs.forEach(org=>{ ORG_TO_BU
 function orgToBU(org){ return ORG_TO_BU[(org||'').trim()] || null; }
 /* PART 1 집계 대상: 직속조직 6개 + 연구소 7개 팀만 (상위 조직은 제외) */
 function isSpace(org){ return SPACE_ORGS.includes((org||'').trim()); }
+/* 재직 현황(총원) 대상: 13개 팀 전원 + 상위조직(우주사업총괄/우주사업부/우주연구소)에 소속된 임원 */
+const UPPER_ORGS = ['우주사업총괄','우주사업부','우주연구소'];
+function inTotal(r){ return isSpace(r[ORG_FIELD]) || (UPPER_ORGS.includes((r[ORG_FIELD]||'').trim()) && isExec(r)); }
 let EXEC_EXCLUDED = 0;
 
 /* 임원 판별: 직위코드명 기준 (직급코드 P/VP/ED 기준이 아님) */
@@ -502,7 +505,7 @@ function tenureYearsOf(row, base){
 
 /* ===== 5. 당월 명부 집계/렌더 — PART 1 (우주사업부) ===== */
 function renderAllFromCurrent(){
-  const spaceAll = state.curr.filter(r=>isSpace(r[ORG_FIELD]));
+  const spaceAll = state.curr.filter(r=>inTotal(r));
   const active = spaceAll.filter(r=>r['재직상태']==='재직');          /* 임원 포함 (재직 현황, 직군별) */
   const activeNE = active.filter(r=>!isExec(r));                    /* 임원 제외 (그 외 카드) */
   EXEC_EXCLUDED = active.length - activeNE.length;
@@ -885,7 +888,7 @@ function renderComparison(){
   const changeRows=[];
 
   currMap.forEach((row,id)=>{
-    if(!isSpace(row[ORG_FIELD])) return;
+    if(!inTotal(row)) return;
     const prev = prevMap.get(id);
     if(!prev){
       const type = FORCE_TRANSFER_IN.includes(row['성명']) ? '전입' : '채용';
@@ -893,7 +896,7 @@ function renderComparison(){
       changeRows.push({name:row['성명'], changes:[{type:type==='채용'?'신규채용':'전입', before:'-', after:row[ORG_FIELD], tag:'hire', position:displayTitle(row['성명'], row['직급명'])}]});
       return;
     }
-    if(!isSpace(prev[ORG_FIELD])){
+    if(!inTotal(prev)){
       flow['전입']++; flowNames['전입'].push(row['성명']);
       changeRows.push({name:row['성명'], changes:[{type:'전입(타사업부)', before:prev[ORG_FIELD], after:row[ORG_FIELD], tag:'transfer-in', position:displayTitle(prev['성명'], prev['직급명'])}]});
       return;
@@ -912,18 +915,18 @@ function renderComparison(){
     if(changes.length) changeRows.push({name:row['성명'], changes});
   });
   prevMap.forEach((row,id)=>{
-    if(!isSpace(row[ORG_FIELD])) return;
+    if(!inTotal(row)) return;
     const curr = currMap.get(id);
     if(!curr){ flow['퇴직']++; flowNames['퇴직'].push(row['성명']); changeRows.push({name:row['성명'], changes:[{type:'퇴직', before:row[ORG_FIELD], after:'퇴직', tag:'retire', position:row['직급명']}]}); return; }
-    if(!isSpace(curr[ORG_FIELD])){ flow['전출']++; flowNames['전출'].push(row['성명']); changeRows.push({name:row['성명'], changes:[{type:'전출(타사업부)', before:row[ORG_FIELD], after:curr[ORG_FIELD], tag:'transfer-out', position:row['직급명']}]}); }
+    if(!inTotal(curr)){ flow['전출']++; flowNames['전출'].push(row['성명']); changeRows.push({name:row['성명'], changes:[{type:'전출(타사업부)', before:row[ORG_FIELD], after:curr[ORG_FIELD], tag:'transfer-out', position:row['직급명']}]}); }
   });
   renderFlowCard(flow,flowNames); renderChangeTable(changeRows);
   updateHeadcountDiff();
 }
 
 function updateHeadcountDiff(){
-  const prevCount = state.prev.filter(r=>r['재직상태']==='재직' && isSpace(r[ORG_FIELD])).length;
-  const currCount = state.curr.filter(r=>r['재직상태']==='재직' && isSpace(r[ORG_FIELD])).length;
+  const prevCount = state.prev.filter(r=>r['재직상태']==='재직' && inTotal(r)).length;
+  const currCount = state.curr.filter(r=>r['재직상태']==='재직' && inTotal(r)).length;
   const diff = currCount - prevCount;
   const el = document.getElementById('kpiTotalDiff');
   el.textContent = (diff>=0?'+':'') + diff;
@@ -931,8 +934,8 @@ function updateHeadcountDiff(){
 }
 
 function renderFlowCard(flow,flowNames){
-  const prevCount = state.prev.filter(r=>r['재직상태']==='재직' && isSpace(r[ORG_FIELD])).length;
-  const currCount = state.curr.filter(r=>r['재직상태']==='재직' && isSpace(r[ORG_FIELD])).length;
+  const prevCount = state.prev.filter(r=>r['재직상태']==='재직' && inTotal(r)).length;
+  const currCount = state.curr.filter(r=>r['재직상태']==='재직' && inTotal(r)).length;
   const diff = currCount-prevCount;
   window.__flowNameMap = flowNames;
   const signed={채용:flow.채용,복직:flow.복직,전입:flow.전입,퇴직:-flow.퇴직,휴직:-flow.휴직,전출:-flow.전출};
