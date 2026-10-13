@@ -853,7 +853,6 @@ function renderBUSection(){
   rows += `<tr class="total"><td class="lbl">전사 합계</td>${degrees.map(d=>`<td>${totals[d]}</td>`).join('')}<td>${totalSum}</td></tr>`;
   rows += `<tr><td class="lbl">비율(%)</td>${degrees.map(d=>`<td>${totalSum?Math.round(totals[d]/totalSum*100):0}%</td>`).join('')}<td>100%</td></tr>`;
 document.getElementById('buEduContent').innerHTML = `<div class="split"><div class="tbl-col"><table class="tbl">${rows}</table></div><div class="chart-col" id="buEduPie"></div></div>`;
-if(unmappedRows.length){ document.getElementById('buEduContent').insertAdjacentHTML('beforeend', `<div style="margin-top:10px;font-size:12px;color:#C0392B;">사업부 미분류 ${unmappedRows.length}명(집계 제외): ${unmappedRows.map(r=>`${r['성명']}(${r[ORG_FIELD]||'빈칸'})`).join(', ')}</div>`); }
 const buEduColors = donutPalette(degrees.length);
 renderDonut('buEduPie', degrees.map((d,i)=>({label:d, value:totals[d], color:buEduColors[i]})), '전사 학력 분포', {forceLabels:true});
 
